@@ -4,7 +4,14 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-bevy = { version = "0.14.2", features = ["dynamic_linking"] }
+bevy = { version = "0.14.2", features = ["dynamic_linking", "bevy_dev_tools"] }
+bevy_ecs_tilemap = { version = "0.14.0" }
+bevy_egui = "0.30.1"
+clap = { version = "4.5.21", features = ["derive"] }
+
+[features]
+dev_mode = ["bevy/bevy_dev_tools"]
+
 
 # Enable a small amount of optimization in the dev profile.
 [profile.dev]
