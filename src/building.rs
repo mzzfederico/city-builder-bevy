@@ -48,7 +48,8 @@ fn enable_building(
 
         commands.spawn((
             BuildingTemplateMarker,
-            BuildingTemplateCanBuild(false),
+            CanBuild(false),
+            CoveringTiles(vec![]),
             BuildingSize((2, 2)),
             SpriteBundle {
                 sprite: Sprite {
@@ -79,7 +80,7 @@ fn update_building_cursor(
     current_level: Res<crate::grid::CurrentLevel>,
     levels: Res<Assets<Level>>,
     mut template_q: Query<
-        (&mut Transform, &mut Sprite, &mut BuildingTemplateCanBuild),
+        (&mut Transform, &mut Sprite, &mut CanBuild),
         With<BuildingTemplateMarker>,
     >,
 ) {
@@ -119,14 +120,15 @@ fn check_buildable_status(
     resources: Res<crate::resources::GlobalResources>,
     selected_tile: Res<SelectedTile>,
     mut template_q: Query<
-        (&mut BuildingTemplateCanBuild, &BuildingSize),
-        With<BuildingTemplateMarker>,
+        (&mut CanBuild, &BuildingSize, &mut CoveringTiles),
+        (With<BuildingTemplateMarker>, Without<Building>),
     >,
     tile_q: Query<(&TilePos, &Terrain)>,
+    buildings_q: Query<&mut CoveringTiles, With<Building>>,
 ) {
     template_q
         .iter_mut()
-        .for_each(|(mut can_build, building_size)| {
+        .for_each(|(mut can_build, building_size, mut possible_tiles)| {
             if resources.gold < 100 {
                 return can_build.0 = false;
             }
@@ -135,15 +137,22 @@ fn check_buildable_status(
                 let (tile_pos, _tt) = tile_q.get(selected_tile).unwrap();
                 let (tx, ty) = building_size.0;
 
-                let possible_tiles: Vec<bool> = tile_q
+                let covering_tiles: Vec<TilePos> = tile_q
                     .iter()
                     .filter(|(pos, _terr)| position_is_in_region(tile_pos, tx, ty, pos))
-                    .map(|(_pos, terr)| terr.is_buildable)
+                    .filter(|(_pos, terr)| terr.is_buildable)
+                    .map(|(pos, _terr)| pos.clone())
                     .collect();
 
-                let all_buildable = possible_tiles.iter().all(|&x| x);
+                let is_overlapping_building = buildings_q.iter().any(|building| {
+                    building.0.iter().any(|building_tile| {
+                        covering_tiles.iter().any(|tile| tile == building_tile)
+                    })
+                });
 
-                if all_buildable && (possible_tiles.len() as u32) == tx * ty {
+                possible_tiles.0 = covering_tiles.clone();
+
+                if (covering_tiles.len() as u32) == tx * ty && !is_overlapping_building {
                     return can_build.0 = true;
                 } else {
                     return can_build.0 = false;
@@ -159,32 +168,34 @@ fn construct_building(
     mut mouse: EventReader<MouseButtonInput>,
     mut commands: Commands,
     template_q: Query<Entity, With<BuildingTemplateMarker>>,
-    transform_q: Query<&mut Transform, With<BuildingTemplateMarker>>,
+    transform_q: Query<(&mut Transform, &CoveringTiles, &CanBuild), With<BuildingTemplateMarker>>,
     mut resources: ResMut<crate::resources::GlobalResources>,
     mut building_mode: ResMut<NextState<BuildingMode>>,
 ) {
     mouse.read().for_each(|event| {
         if event.button == MouseButton::Left && event.state.is_pressed() {
-            let translation = transform_q.iter().last().unwrap();
+            let (translation, covering_tiles, can_build) = transform_q.iter().last().unwrap();
+            if can_build.0 {
+                commands.spawn((
+                    Building(BuildingType::Theatre),
+                    BuildingSize((2, 2)),
+                    CoveringTiles(covering_tiles.0.clone()),
+                    SpriteBundle {
+                        texture: asset_server.load("buildings/theatre.png"),
+                        transform: Transform::from(*translation),
+                        ..default()
+                    },
+                ));
 
-            commands.spawn((
-                Building(BuildingType::Theatre),
-                BuildingSize((2, 2)),
-                SpriteBundle {
-                    texture: asset_server.load("buildings/theatre.png"),
-                    transform: Transform::from(*translation),
-                    ..default()
-                },
-            ));
+                resources.gold -= 100;
 
-            resources.gold -= 100;
+                building_mode.set(BuildingMode::Off);
+
+                template_q.iter().for_each(|e| {
+                    commands.entity(e).despawn();
+                });
+            }
         }
-
-        building_mode.set(BuildingMode::Off);
-
-        template_q.iter().for_each(|e| {
-            commands.entity(e).despawn();
-        });
     });
 }
 
@@ -198,6 +209,8 @@ pub enum BuildingType {
 pub struct Building(BuildingType);
 #[derive(Component)]
 pub struct BuildingSize((u32, u32));
+#[derive(Component, Clone)]
+pub struct CoveringTiles(Vec<TilePos>);
 
 #[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, States)]
 pub enum BuildingMode {
@@ -210,4 +223,4 @@ pub enum BuildingMode {
 pub struct BuildingTemplateMarker;
 
 #[derive(Component)]
-pub struct BuildingTemplateCanBuild(bool);
+pub struct CanBuild(bool);
