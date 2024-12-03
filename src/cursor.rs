@@ -11,14 +11,8 @@ impl Plugin for CursorPlugin {
     }
 }
 
-#[derive(Resource)]
+#[derive(Resource, Default)]
 pub struct SelectedTile(pub Option<Entity>);
-
-impl Default for SelectedTile {
-    fn default() -> Self {
-        Self(None)
-    }
-}
 
 #[derive(Resource)]
 pub struct CursorPos(Vec2);

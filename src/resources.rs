@@ -6,8 +6,8 @@ pub struct GlobalResources {
 }
 
 impl Default for GlobalResources {
-     fn default() -> Self {
-        Self { gold: 10000 }
+    fn default() -> Self {
+        Self { gold: 1000 }
     }
 }
 
@@ -17,4 +17,3 @@ impl Plugin for ResourcesPlugin {
         app.init_resource::<GlobalResources>();
     }
 }
-

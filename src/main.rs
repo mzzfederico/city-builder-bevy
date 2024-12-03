@@ -18,6 +18,13 @@ use grid::GridPlugin;
 use resources::ResourcesPlugin;
 use ui::UiPlugin;
 
+#[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, States)]
+pub enum AppState {
+    #[default]
+    Loading,
+    Level,
+}
+
 fn main() {
     let args = Args::parse();
 

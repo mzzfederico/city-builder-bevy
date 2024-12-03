@@ -10,7 +10,7 @@ impl Plugin for UiPlugin {
     }
 }
 
-fn ui_example_system(mut contexts: EguiContexts, mut resources: ResMut<GlobalResources>) {
+fn ui_example_system(mut contexts: EguiContexts, resources: ResMut<GlobalResources>) {
     egui::Window::new("Resources").show(contexts.ctx_mut(), |ui| {
         ui.label(format!("Gold: {}", resources.gold.to_string()));
     });
