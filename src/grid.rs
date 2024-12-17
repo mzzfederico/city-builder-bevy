@@ -72,7 +72,9 @@ fn create_terrain_tilemap(
                     ..Default::default()
                 };
 
-                let tile_entity = commands.spawn((tiles[x][y].clone(), tile_bundle)).id();
+                let tile_entity = commands
+                    .spawn((tiles[x][y].clone(), Occupied(None), tile_bundle))
+                    .id();
 
                 tile_storage.set(&tile_pos, tile_entity);
             }
@@ -145,6 +147,9 @@ impl Default for Terrain {
         }
     }
 }
+
+#[derive(Component, Clone)]
+pub struct Occupied(pub Option<Entity>);
 
 impl Terrain {
     pub fn create_grass() -> Self {

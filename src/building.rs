@@ -13,11 +13,11 @@ use components::BuildingType;
 use components::CanBuild;
 
 use crate::building::bundle::BuildingBundle;
-use crate::building::components::BuildingSize;
 use crate::building::components::CoveringTiles;
 
 use crate::cursor::SelectedTile;
 use crate::grid::Level;
+use crate::grid::Occupied;
 use crate::grid::Terrain;
 use crate::grid::TILE_H;
 use crate::grid::TILE_W;
@@ -136,39 +136,32 @@ fn check_buildable_status(
     resources: Res<crate::resources::GlobalResources>,
     selected_tile: Res<SelectedTile>,
     mut template_q: Query<
-        (&mut CanBuild, &BuildingSize, &mut CoveringTiles),
+        (&BuildingType, &mut CanBuild, &mut CoveringTiles),
         (With<BuildingTemplateMarker>, Without<Building>),
     >,
-    tile_q: Query<(&TilePos, &Terrain)>,
-    buildings_q: Query<&mut CoveringTiles, With<Building>>,
+    tile_q: Query<(Entity, &TilePos, &Terrain, &Occupied)>,
 ) {
     template_q
         .iter_mut()
-        .for_each(|(mut can_build, building_size, mut possible_tiles)| {
-            if resources.gold < 100 {
+        .for_each(|(building_type, mut can_build, mut possible_tiles)| {
+            if resources.gold < building_type.cost() as i32 {
                 return can_build.0 = false;
             }
 
             if let Some(selected_tile) = selected_tile.0 {
-                let (tile_pos, _tt) = tile_q.get(selected_tile).unwrap();
-                let (tx, ty) = building_size.0;
+                let (_, tile_pos, _, _) = tile_q.get(selected_tile).unwrap();
+                let (tx, ty) = building_type.size();
 
-                let covering_tiles: Vec<TilePos> = tile_q
+                let covering_tiles: Vec<Entity> = tile_q
                     .iter()
-                    .filter(|(pos, _terr)| position_is_in_region(tile_pos, tx, ty, pos))
-                    .filter(|(_pos, terr)| terr.is_buildable)
-                    .map(|(pos, _terr)| pos.clone())
+                    .filter(|(_, pos, _, _)| position_is_in_region(tile_pos, tx, ty, pos))
+                    .filter(|(_, _, terr, occupied)| terr.is_buildable && occupied.0.is_none())
+                    .map(|(entity, _, _, _)| entity.clone())
                     .collect();
-
-                let is_overlapping_building = buildings_q.iter().any(|building| {
-                    building.0.iter().any(|building_tile| {
-                        covering_tiles.iter().any(|tile| tile == building_tile)
-                    })
-                });
 
                 possible_tiles.0 = covering_tiles.clone();
 
-                if (covering_tiles.len() as u32) == tx * ty && !is_overlapping_building {
+                if (covering_tiles.len() as u32) == tx * ty {
                     return can_build.0 = true;
                 } else {
                     return can_build.0 = false;
@@ -196,15 +189,23 @@ fn construct_building(
             marker_components_q.iter().for_each(
                 |(building_type, transform, covering_tiles, can_build)| {
                     if can_build.0 {
-                        commands.spawn(BuildingBundle::build(
-                            building_type.clone(),
-                            transform.translation.clone(),
-                            covering_tiles.0.clone(),
-                            &asset_server,
-                        ));
+                        let new_building_entity = commands
+                            .spawn(BuildingBundle::build(
+                                building_type.clone(),
+                                transform.translation.clone(),
+                                &asset_server,
+                            ))
+                            .id();
 
-                        resources.gold -= 100;
+                        resources.gold -= building_type.cost() as i32;
                         building_mode.set(BuildingMode::Off);
+
+                        covering_tiles.0.iter().for_each(|e| {
+                            commands
+                                .entity(*e)
+                                .remove::<Occupied>()
+                                .insert(Occupied(Some(new_building_entity)));
+                        });
 
                         marker_entity_q.iter().for_each(|e| {
                             commands.entity(e).despawn();

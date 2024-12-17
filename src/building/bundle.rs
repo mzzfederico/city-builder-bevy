@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use bevy_ecs_tilemap::tiles::TilePos;
 
 use super::{
     components::{
@@ -13,7 +12,6 @@ pub struct BuildingBundle {
     pub building: Building,
     pub building_type: BuildingType,
     pub building_size: BuildingSize,
-    pub covering_tiles: CoveringTiles,
     pub sprite: SpriteBundle,
 }
 
@@ -21,17 +19,15 @@ impl BuildingBundle {
     pub fn build(
         building_type: BuildingType,
         position: Vec3,
-        tiles: Vec<TilePos>,
         asset_server: &Res<AssetServer>,
     ) -> Self {
         let transform = Transform::from_xyz(position.x, position.y, position.z);
-        let texture = asset_server.load(&building_type.sprite());
+        let texture = asset_server.load(building_type.sprite());
 
         Self {
             building: Building,
             building_type,
             building_size: BuildingSize(building_type.size()),
-            covering_tiles: CoveringTiles(tiles),
             sprite: SpriteBundle {
                 texture,
                 transform: Transform::from(transform),

@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use bevy_ecs_tilemap::tiles::TilePos;
 
 #[derive(Component)]
 pub struct Building;
@@ -10,11 +9,20 @@ pub struct BuildingSize(pub (u32, u32));
 #[derive(Component, Clone, Copy)]
 pub enum BuildingType {
     Theatre,
-    //    Amphiteatre,
-    //    Colosseum,
 }
 
 impl BuildingType {
+    pub fn size(&self) -> (u32, u32) {
+        match self {
+            BuildingType::Theatre => (2, 2).to_owned(),
+        }
+    }
+
+    pub fn sprite(&self) -> &'static str {
+        match self {
+            BuildingType::Theatre => "buildings/theatre.png",
+        }
+    }
     pub fn occupation(&self) -> u32 {
         match self {
             BuildingType::Theatre => 4,
@@ -38,26 +46,10 @@ impl BuildingType {
             //            BuildingType::Colosseum => "Colosseum".to_string(),
         }
     }
-
-    pub fn size(&self) -> (u32, u32) {
-        match self {
-            BuildingType::Theatre => (2, 2).to_owned(),
-            //            BuildingType::Amphiteatre => (4, 4),
-            //            BuildingType::Colosseum => (5, 5),
-        }
-    }
-
-    pub fn sprite(&self) -> String {
-        match self {
-            BuildingType::Theatre => "buildings/theatre.png".to_string(),
-            //            BuildingType::Amphiteatre => "buildings/amphiteatre.png",
-            //            BuildingType::Colosseum => "buildings/colosseum.png",
-        }
-    }
 }
 
 #[derive(Component, Clone)]
-pub struct CoveringTiles(pub Vec<TilePos>);
+pub struct CoveringTiles(pub Vec<Entity>);
 
 #[derive(Component)]
 pub struct BuildingTemplateMarker;
