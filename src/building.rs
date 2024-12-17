@@ -1,14 +1,28 @@
+mod bundle;
+mod components;
+
 use bevy::input::mouse::MouseButtonInput;
 use bevy::prelude::*;
 use bevy_ecs_tilemap::map::TilemapGridSize;
 use bevy_ecs_tilemap::map::TilemapType;
 use bevy_ecs_tilemap::tiles::TilePos;
+use bundle::BuildingMarkerBundle;
+use components::Building;
+use components::BuildingTemplateMarker;
+use components::BuildingType;
+use components::CanBuild;
+
+use crate::building::bundle::BuildingBundle;
+use crate::building::components::BuildingSize;
+use crate::building::components::CoveringTiles;
 
 use crate::cursor::SelectedTile;
 use crate::grid::Level;
 use crate::grid::Terrain;
 use crate::grid::TILE_H;
 use crate::grid::TILE_W;
+use crate::time::GameTimer;
+use crate::time::TimeState;
 use crate::AppState;
 
 pub struct BuildingPlugin;
@@ -27,6 +41,24 @@ impl Plugin for BuildingPlugin {
             )
                 .run_if(in_state(BuildingMode::On)),
         );
+
+        app.add_systems(
+            FixedUpdate,
+            (pay_wages).run_if(in_state(TimeState::Running)),
+        );
+    }
+}
+
+fn pay_wages(
+    time: Res<Time>,
+    mut timer: ResMut<GameTimer>,
+    mut resources: ResMut<crate::resources::GlobalResources>,
+    q: Query<&BuildingType, With<Building>>,
+) {
+    if timer.0.tick(time.delta()).just_finished() {
+        for building in q.iter() {
+            resources.gold -= (building.occupation() * 30) as i32;
+        }
     }
 }
 
@@ -44,23 +76,7 @@ fn enable_building(
             commands.entity(e).despawn();
         });
 
-        let texture = asset_server.load("buildings/theatre.png");
-
-        commands.spawn((
-            BuildingTemplateMarker,
-            CanBuild(false),
-            CoveringTiles(vec![]),
-            BuildingSize((2, 2)),
-            SpriteBundle {
-                sprite: Sprite {
-                    color: Color::srgba(0.5, 0.5, 0.5, 0.7),
-                    ..default()
-                },
-                texture: texture.clone(),
-                transform: Transform::from_xyz(100000000., 100000000., 2.),
-                ..default()
-            },
-        ));
+        commands.spawn(BuildingMarkerBundle::theatre(asset_server));
     } else if keys.just_pressed(KeyCode::Escape) {
         building_mode.set(BuildingMode::Off);
 
@@ -101,9 +117,9 @@ fn update_building_cursor(
             transform.translation.z = 3.;
 
             if can_build.0 {
-                sprite.color = Color::srgba(0.5, 1.0, 0.5, 0.7);
+                sprite.color = BuildableColor::Green.into();
             } else {
-                sprite.color = Color::srgba(1.0, 0.5, 0.5, 0.7);
+                sprite.color = BuildableColor::Red.into();
             }
         }
     }
@@ -164,53 +180,41 @@ fn check_buildable_status(
 }
 
 fn construct_building(
-    asset_server: Res<AssetServer>,
     mut mouse: EventReader<MouseButtonInput>,
     mut commands: Commands,
-    template_q: Query<Entity, With<BuildingTemplateMarker>>,
-    transform_q: Query<(&mut Transform, &CoveringTiles, &CanBuild), With<BuildingTemplateMarker>>,
     mut resources: ResMut<crate::resources::GlobalResources>,
     mut building_mode: ResMut<NextState<BuildingMode>>,
+    asset_server: Res<AssetServer>,
+    marker_entity_q: Query<Entity, With<BuildingTemplateMarker>>,
+    marker_components_q: Query<
+        (&BuildingType, &Transform, &CoveringTiles, &CanBuild),
+        With<BuildingTemplateMarker>,
+    >,
 ) {
     mouse.read().for_each(|event| {
         if event.button == MouseButton::Left && event.state.is_pressed() {
-            let (translation, covering_tiles, can_build) = transform_q.iter().last().unwrap();
-            if can_build.0 {
-                commands.spawn((
-                    Building(BuildingType::Theatre),
-                    BuildingSize((2, 2)),
-                    CoveringTiles(covering_tiles.0.clone()),
-                    SpriteBundle {
-                        texture: asset_server.load("buildings/theatre.png"),
-                        transform: Transform::from(*translation),
-                        ..default()
-                    },
-                ));
+            marker_components_q.iter().for_each(
+                |(building_type, transform, covering_tiles, can_build)| {
+                    if can_build.0 {
+                        commands.spawn(BuildingBundle::build(
+                            building_type.clone(),
+                            transform.translation.clone(),
+                            covering_tiles.0.clone(),
+                            &asset_server,
+                        ));
 
-                resources.gold -= 100;
+                        resources.gold -= 100;
+                        building_mode.set(BuildingMode::Off);
 
-                building_mode.set(BuildingMode::Off);
-
-                template_q.iter().for_each(|e| {
-                    commands.entity(e).despawn();
-                });
-            }
+                        marker_entity_q.iter().for_each(|e| {
+                            commands.entity(e).despawn();
+                        });
+                    }
+                },
+            );
         }
     });
 }
-
-pub enum BuildingType {
-    Theatre,
-    //    Amphiteatre,
-    //    Colosseum,
-}
-
-#[derive(Component)]
-pub struct Building(BuildingType);
-#[derive(Component)]
-pub struct BuildingSize((u32, u32));
-#[derive(Component, Clone)]
-pub struct CoveringTiles(Vec<TilePos>);
 
 #[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, States)]
 pub enum BuildingMode {
@@ -219,8 +223,18 @@ pub enum BuildingMode {
     On,
 }
 
-#[derive(Component)]
-pub struct BuildingTemplateMarker;
+#[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash)]
+pub enum BuildableColor {
+    #[default]
+    Green,
+    Red,
+}
 
-#[derive(Component)]
-pub struct CanBuild(bool);
+impl From<BuildableColor> for Color {
+    fn from(bc: BuildableColor) -> Self {
+        match bc {
+            BuildableColor::Green => Color::srgba(0., 0.5, 0., 0.7),
+            BuildableColor::Red => Color::srgba(0.5, 0., 0., 0.7),
+        }
+    }
+}

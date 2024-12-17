@@ -4,6 +4,7 @@ mod cli;
 mod cursor;
 mod grid;
 mod resources;
+mod time;
 mod ui;
 
 use bevy::prelude::*;
@@ -16,6 +17,7 @@ use cli::Args;
 use cursor::CursorPlugin;
 use grid::GridPlugin;
 use resources::ResourcesPlugin;
+use time::TimeControlsPlugin;
 use ui::UiPlugin;
 
 #[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, States)]
@@ -41,6 +43,7 @@ fn main() {
                 .set(ImagePlugin::default_nearest()),
         )
         .insert_resource(args)
+        .add_plugins(TimeControlsPlugin)
         .add_plugins(TilemapPlugin) // This is the plugin for the tilemap
         .add_plugins(GridPlugin)
         .add_plugins(CameraPlugin)

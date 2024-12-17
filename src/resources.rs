@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 #[derive(Resource)]
 pub struct GlobalResources {
-    pub gold: u32,
+    pub gold: i32,
 }
 
 impl Default for GlobalResources {
