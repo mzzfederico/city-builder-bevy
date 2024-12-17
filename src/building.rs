@@ -152,20 +152,17 @@ fn check_buildable_status(
                 let (_, tile_pos, _, _) = tile_q.get(selected_tile).unwrap();
                 let (tx, ty) = building_type.size();
 
-                let covering_tiles: Vec<Entity> = tile_q
+                possible_tiles.0 = tile_q
                     .iter()
-                    .filter(|(_, pos, _, _)| position_is_in_region(tile_pos, tx, ty, pos))
-                    .filter(|(_, _, terr, occupied)| terr.is_buildable && occupied.0.is_none())
+                    .filter(|(_, pos, terr, occupied)| {
+                        position_is_in_region(tile_pos, tx, ty, pos)
+                            && terr.is_buildable
+                            && occupied.0.is_none()
+                    })
                     .map(|(entity, _, _, _)| entity.clone())
                     .collect();
 
-                possible_tiles.0 = covering_tiles.clone();
-
-                if (covering_tiles.len() as u32) == tx * ty {
-                    return can_build.0 = true;
-                } else {
-                    return can_build.0 = false;
-                }
+                return can_build.0 = (possible_tiles.0.len() as u32) == tx * ty;
             } else {
                 return can_build.0 = false;
             }
