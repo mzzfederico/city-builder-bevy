@@ -4,9 +4,6 @@ use bevy::prelude::*;
 pub struct Building;
 
 #[derive(Component, Clone, Copy)]
-pub struct BuildingSize(pub (u32, u32));
-
-#[derive(Component, Clone, Copy)]
 pub enum BuildingType {
     Theatre,
 }

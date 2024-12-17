@@ -1,4 +1,7 @@
 use crate::{
+    building::components::{Building, BuildingType},
+    cursor::SelectedTile,
+    grid::Occupied,
     resources::GlobalResources,
     time::{GameTimer, TimeSpeed, TimeState},
 };
@@ -14,6 +17,7 @@ impl Plugin for UiPlugin {
         app.add_plugins(EguiPlugin);
         app.add_systems(Update, ui_generic_resources);
         app.add_systems(Update, ui_time_controls);
+        app.add_systems(Update, ui_building_tooltip);
     }
 }
 
@@ -80,6 +84,29 @@ fn ui_time_controls(
             next_time_state.set(TimeState::Running);
             next_speed.set(TimeSpeed::Fastest);
             game_timer.0 = Timer::from_seconds(0.8525, TimerMode::Repeating);
+        }
+    });
+}
+fn ui_building_tooltip(
+    mut contexts: EguiContexts,
+    selected_tile: Res<SelectedTile>,
+    tiles_q: Query<&Occupied>,
+    buildings_q: Query<&BuildingType, With<Building>>,
+) {
+    egui::Window::new("Building Info").show(contexts.ctx_mut(), |ui| {
+        if let Some(tile) = selected_tile.0 {
+            if let Ok(occupying_element) = tiles_q.get(tile) {
+                occupying_element.0.map(|building_entity| {
+                    if let Ok(building) = buildings_q.get(building_entity) {
+                        ui.label(RichText::new(building.name()));
+                        ui.label(RichText::new("Lorem ipsum dolor sit amet..."));
+                        ui.label(RichText::new("Occupation").color(Color32::WHITE));
+                        ui.label(RichText::new(format!("max/{}", building.occupation())));
+                        ui.label(RichText::new("Production").color(Color32::WHITE));
+                        ui.label(RichText::new("__/100%"));
+                    }
+                });
+            }
         }
     });
 }

@@ -1,5 +1,5 @@
-mod bundle;
-mod components;
+pub mod bundle;
+pub mod components;
 
 use bevy::input::mouse::MouseButtonInput;
 use bevy::prelude::*;
