@@ -110,7 +110,7 @@ fn update_building_cursor(
     for (map_type, grid_size) in tilemap_q.iter() {
         let tile_pos = tile_q.get(*selected_tile).unwrap();
         let tile_center = tile_pos.center_in_world(grid_size, map_type).extend(1.0);
-        for (mut transform, mut sprite, can_build) in template_q.iter_mut() {
+        for (mut transform, mut sprite, can_build) in &mut template_q {
             transform.translation.x =
                 tile_center.x - (TILE_W * ((current_level.width / 2) - 1)) as f32;
             transform.translation.y = tile_center.y + (TILE_H / 2) as f32;
@@ -126,7 +126,7 @@ fn update_building_cursor(
 }
 
 /**
-* Check if a position is in a region starting at start_x, start_y with width and height
+* Check if a position is in a region starting at `start_x`, `start_y` with width and height
 */
 fn position_is_in_region(start: &TilePos, width: u32, height: u32, pos: &TilePos) -> bool {
     pos.x >= start.x && pos.x < start.x + width && pos.y >= start.y && pos.y < start.y + height
@@ -162,9 +162,9 @@ fn check_buildable_status(
                     .map(|(entity, _, _, _)| entity)
                     .collect();
 
-                can_build.0 = (possible_tiles.0.len() as u32) == tx * ty
+                can_build.0 = (possible_tiles.0.len() as u32) == tx * ty;
             } else {
-                can_build.0 = false
+                can_build.0 = false;
             }
         });
 }

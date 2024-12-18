@@ -21,7 +21,7 @@ pub fn movement(
     keyboard_input: Res<ButtonInput<KeyCode>>,
     mut query: Query<(&mut Transform, &mut OrthographicProjection), With<Camera>>,
 ) {
-    for (mut transform, mut ortho) in query.iter_mut() {
+    for (mut transform, mut ortho) in &mut query {
         let mut direction = Vec3::ZERO;
 
         if keyboard_input.pressed(KeyCode::KeyA) {

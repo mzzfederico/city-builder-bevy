@@ -57,7 +57,7 @@ fn hover_tile(
     mut tile_selected: ResMut<SelectedTile>,
     mut tile_pos_selected: ResMut<SelectedTilePos>,
 ) {
-    for (map_size, grid_size, map_type, tile_storage, map_transform) in tilemap_q.iter_mut() {
+    for (map_size, grid_size, map_type, tile_storage, map_transform) in &mut tilemap_q {
         let cursor_pos: Vec2 = cursor_pos.0;
 
         let cursor_in_map_pos: Vec2 = {
