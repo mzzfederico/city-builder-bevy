@@ -26,7 +26,7 @@ impl BuildingBundle {
             building_type,
             sprite: SpriteBundle {
                 texture,
-                transform: Transform::from(transform),
+                transform,
                 ..Default::default()
             },
         }

@@ -23,7 +23,7 @@ impl Plugin for UiPlugin {
 
 fn ui_generic_resources(mut contexts: EguiContexts, resources: ResMut<GlobalResources>) {
     egui::Window::new("Resources").show(contexts.ctx_mut(), |ui| {
-        ui.label(format!("Gold"));
+        ui.label("Gold".to_string());
         ui.label(RichText::new(resources.gold.to_string()).color(Color32::WHITE));
     });
 }

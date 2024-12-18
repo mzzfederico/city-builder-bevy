@@ -119,9 +119,9 @@ pub enum TerrainType {
     // Mountain = 2,
 }
 
-impl Into<TileTextureIndex> for TerrainType {
-    fn into(self) -> TileTextureIndex {
-        match self {
+impl From<TerrainType> for TileTextureIndex {
+    fn from(val: TerrainType) -> Self {
+        match val {
             x => TileTextureIndex(x as u32),
         }
     }

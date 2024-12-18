@@ -24,13 +24,9 @@ impl Default for CursorPos {
 }
 
 #[derive(Resource)]
+#[derive(Default)]
 pub struct SelectedTilePos(Option<Vec2>);
 
-impl Default for SelectedTilePos {
-    fn default() -> Self {
-        Self(None)
-    }
-}
 
 pub fn update_cursor_pos(
     camera_q: Query<(&GlobalTransform, &Camera)>,

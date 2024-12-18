@@ -159,12 +159,12 @@ fn check_buildable_status(
                             && terr.is_buildable
                             && occupied.0.is_none()
                     })
-                    .map(|(entity, _, _, _)| entity.clone())
+                    .map(|(entity, _, _, _)| entity)
                     .collect();
 
-                return can_build.0 = (possible_tiles.0.len() as u32) == tx * ty;
+                can_build.0 = (possible_tiles.0.len() as u32) == tx * ty
             } else {
-                return can_build.0 = false;
+                can_build.0 = false
             }
         });
 }
@@ -188,8 +188,8 @@ fn construct_building(
                     if can_build.0 {
                         let new_building_entity = commands
                             .spawn(BuildingBundle::build(
-                                building_type.clone(),
-                                transform.translation.clone(),
+                                *building_type,
+                                transform.translation,
                                 &asset_server,
                             ))
                             .id();
