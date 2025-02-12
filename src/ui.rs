@@ -1,7 +1,4 @@
 use crate::{
-    building::components::{Building, BuildingType},
-    cursor::SelectedTile,
-    grid::Occupied,
     resources::GlobalResources,
     time::{GameTimer, TimeSpeed, TimeState},
 };
@@ -17,7 +14,6 @@ impl Plugin for UiPlugin {
         app.add_plugins(EguiPlugin);
         app.add_systems(Update, ui_generic_resources);
         app.add_systems(Update, ui_time_controls);
-        app.add_systems(Update, ui_building_tooltip);
     }
 }
 
@@ -87,29 +83,26 @@ fn ui_time_controls(
         }
     });
 }
-fn ui_building_tooltip(
-    mut contexts: EguiContexts,
-    selected_tile: Res<SelectedTile>,
-    tiles_q: Query<&Occupied>,
-    buildings_q: Query<&BuildingType, With<Building>>,
-) {
-    if let Some(tile) = selected_tile.0 {
-        if let Ok(occupying_element) = tiles_q.get(tile) {
-            occupying_element.0.map(|building_entity| {
-                if let Ok(building) = buildings_q.get(building_entity) {
-                    egui::Window::new("Building Info").collapsible(false).show(
-                        contexts.ctx_mut(),
-                        |ui| {
-                            ui.label(RichText::new(building.name()));
-                            ui.label(RichText::new("Lorem ipsum dolor sit amet..."));
-                            ui.label(RichText::new("Occupation").color(Color32::WHITE));
-                            ui.label(RichText::new(format!("max/{}", building.occupation())));
-                            ui.label(RichText::new("Production").color(Color32::WHITE));
-                            ui.label(RichText::new("__/100%"));
-                        },
-                    );
-                }
-            });
-        }
-    }
-}
+
+// fn ui_building_tooltip(
+//     mut contexts: EguiContexts,
+//     selected_tile: Res<SelectedTile>,
+//     tiles_q: Query<&Occupied>,
+//     buildings_q: Query<&BuildingType, With<Building>>,
+// ) {
+//     if let Some(tile) = selected_tile.0 {
+//         if let Ok(occupying_element) = tiles_q.get(tile) {
+//             occupying_element.0.map(|building_entity| {
+//                 if let Ok(building) = buildings_q.get(building_entity) {
+//                     egui::Window::new("Building Info").collapsible(false).show(
+//                         contexts.ctx_mut(),
+//                         |ui| {
+//                             ui.label(RichText::new(building.name()));
+//                             ui.label(RichText::new("Lorem ipsum dolor sit amet..."));
+//                         },
+//                     );
+//                 }
+//             });
+//         }
+//     }
+// }

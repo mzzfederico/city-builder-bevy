@@ -11,6 +11,7 @@ use components::Building;
 use components::BuildingTemplateMarker;
 use components::BuildingType;
 use components::CanBuild;
+use components::Employees;
 
 use crate::building::bundle::BuildingBundle;
 use crate::building::components::CoveringTiles;
@@ -53,11 +54,11 @@ fn pay_wages(
     time: Res<Time>,
     mut timer: ResMut<GameTimer>,
     mut resources: ResMut<crate::resources::GlobalResources>,
-    q: Query<&BuildingType, With<Building>>,
+    q: Query<&Employees, With<Employees>>,
 ) {
     if timer.0.tick(time.delta()).just_finished() {
         for building in q.iter() {
-            resources.gold -= (building.occupation() * 30) as i32;
+            resources.gold -= (building.employees * 30) as i32;
         }
     }
 }
@@ -69,14 +70,27 @@ fn enable_building(
     mut building_mode: ResMut<NextState<BuildingMode>>,
     template_q: Query<Entity, With<BuildingTemplateMarker>>,
 ) {
-    if keys.just_pressed(KeyCode::KeyB) {
-        building_mode.set(BuildingMode::On);
-
+    if keys.just_pressed(KeyCode::KeyT) {
         template_q.iter().for_each(|e| {
             commands.entity(e).despawn();
         });
 
+        building_mode.set(BuildingMode::On);
         commands.spawn(BuildingMarkerBundle::theatre(asset_server));
+    } else if keys.just_pressed(KeyCode::KeyW) {
+        template_q.iter().for_each(|e| {
+            commands.entity(e).despawn();
+        });
+
+        building_mode.set(BuildingMode::On);
+        commands.spawn(BuildingMarkerBundle::wheat_farm(asset_server));
+    } else if keys.just_pressed(KeyCode::KeyH) {
+        template_q.iter().for_each(|e| {
+            commands.entity(e).despawn();
+        });
+
+        building_mode.set(BuildingMode::On);
+        commands.spawn(BuildingMarkerBundle::house(asset_server));
     } else if keys.just_pressed(KeyCode::Escape) {
         building_mode.set(BuildingMode::Off);
 
